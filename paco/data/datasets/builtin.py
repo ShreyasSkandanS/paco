@@ -9,10 +9,10 @@ from .paco import get_instances_meta, register_instances
 
 # ==== Root directories ====
 _PACO_ANNOTATION_ROOT = os.environ.get(
-    "PACO_ANNOTATION_ROOT", "datasets/paco/annotations"
+    "PACO_ANNOTATION_ROOT", "/tmp/data/coco/paco/annotations"
 )
 _PACO_IMAGE_ROOT = os.environ.get("PACO_IMAGE_ROOT", "datasets/paco/images")
-_COCO_IMAGE_ROOT = os.environ.get("COCO_IMAGE_ROOT", "datasets/coco")
+_COCO_IMAGE_ROOT = os.environ.get("COCO_IMAGE_ROOT", "/tmp/data/coco")
 
 # ==== Predefined datasets and splits for PACO ==========
 _PREDEFINED_PACO = {
