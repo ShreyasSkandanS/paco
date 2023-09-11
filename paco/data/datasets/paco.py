@@ -30,7 +30,6 @@ from .paco_categories import (
 from .paco_lvis_category_image_count import PACO_LVIS_CATEGORY_IMAGE_COUNT
 from .paco_lvis_ego4d_category_image_count import PACO_LVIS_EGO4D_CATEGORY_IMAGE_COUNT
 
-
 logger = logging.getLogger(__name__)
 
 __all__ = ["load_json", "register_instances", "get_instances_meta"]
@@ -127,6 +126,15 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
 
     dataset_dicts = []
 
+    cat_id_to_name = {d["id"]: d["name"] for d in lvis_api.dataset["categories"]}
+
+    def is_cat_a_part(cat_id):
+        is_part = False
+        for pcat in lvis_api.dataset["categories"]:
+            if pcat['id'] == cat_id and pcat['supercategory'] == 'PART':
+                is_part = True
+        return is_part
+
     for (img_dict, anno_dict_list) in imgs_anns:
         record = {}
 
@@ -141,6 +149,9 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
 
         objs = []
         for anno in anno_dict_list:
+
+            if is_cat_a_part(anno['category_id']): continue
+
             # Check that the image_id in this annotation is the same as
             # the image_id we're looking at.
             # This fails only when the data parsing logic or the annotation
@@ -153,15 +164,17 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
                     anno["category_id"]
                 ]
             else:
-                obj["category_id"] = (
-                    anno["category_id"] - 1
-                )  # Convert 1-indexed to 0-indexed
+                # obj["category_id"] = (
+                #         anno["category_id"] - 1
+                # )  # Convert 1-indexed to 0-indexed
+                obj["category_id"] = anno["category_id"]
             segm = anno["segmentation"]  # list[list[float]]
 
             if len(segm) == 0:
                 continue
             assert len(segm) > 0, segm
-            obj["segmentation"] = segm
+            # obj["segmentation"] = segm
+            obj["segmentation"] = []
             for extra_ann_key in extra_annotation_keys:
                 obj[extra_ann_key] = anno[extra_ann_key]
 
@@ -181,7 +194,7 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
         record["annotations"] = objs
         dataset_dicts.append(record)
 
-    return dataset_dicts
+    return dataset_dicts, lvis_api
 
 
 def get_instances_meta(dataset_name):
