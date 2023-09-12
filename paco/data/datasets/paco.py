@@ -128,6 +128,15 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
 
     cat_id_to_name = {d["id"]: d["name"] for d in lvis_api.dataset["categories"]}
 
+    all_obj_cats = dict()
+    for cat in PACO_CATEGORIES:
+        if cat['supercategory'] == 'OBJECT':
+            all_obj_cats[cat['id']] = cat['name']
+    all_obj_cats = dict(sorted(all_obj_cats.items()))
+
+    new_id_to_name = {idx: all_obj_cats[key] for (idx, key) in enumerate(all_obj_cats)}
+    new_name_to_id = {all_obj_cats[key]: idx for (idx, key) in enumerate(all_obj_cats)}
+
     def is_cat_a_part(cat_id):
         is_part = False
         for pcat in lvis_api.dataset["categories"]:
@@ -167,7 +176,10 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
                 # obj["category_id"] = (
                 #         anno["category_id"] - 1
                 # )  # Convert 1-indexed to 0-indexed
-                obj["category_id"] = anno["category_id"]
+                cat_name = cat_id_to_name[anno["category_id"]]
+                new_cat_id = new_name_to_id[cat_name]
+                # obj["category_id"] = anno["category_id"]
+                obj["category_id"] = new_cat_id
             segm = anno["segmentation"]  # list[list[float]]
 
             if len(segm) == 0:
@@ -187,8 +199,9 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
                     anno["unknown_transparency"],
                 ]
             else:
-                obj["attr_labels"] = ATTR_TYPE_BG_IDXS
-                obj["attr_ignores"] = [1, 1, 1, 1]
+                # obj["attr_labels"] = ATTR_TYPE_BG_IDXS
+                # obj["attr_ignores"] = [1, 1, 1, 1]
+                continue
             objs.append(obj)
 
         record["annotations"] = objs

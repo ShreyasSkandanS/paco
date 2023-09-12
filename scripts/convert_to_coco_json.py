@@ -1,76 +1,63 @@
 import json
 from paco.data.datasets.builtin import _PREDEFINED_PACO
-import os
-from collections import defaultdict, Counter
-
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog
-import numpy as np
-from PIL import Image
-
-from paco_utils import get_image_with_cat_boxes, get_image_with_masks, get_obj_and_part_anns
+from collections import Counter
 
 from paco.data.datasets.paco import load_json
 
-dataset_name = "paco_lvis_v1_train"
+
+def write_json(json_obj, filename, indent):
+    """
+    Write JSON object to filename
+    """
+    with open(filename, 'w') as f:
+        json.dump(json_obj, f, indent=indent)
+
+
+def verify_stats(dset_coco):
+    # Verify bounding box and image annotations
+    img_counter = Counter()
+    for img_anno in dset_coco:
+        annos = img_anno['annotations']
+        image_id = img_anno['image_id']
+        for ann in annos:
+            if len(ann['attr_labels']) > 0:
+                img_counter[image_id] += 1
+    print("Total images with obj & attr: {}".format(len(img_counter)))
+    print("Total bounding boxes with obj & attr: {}".format(sum(img_counter.values())))
+
+
+tr_dataset_name = "paco_lvis_v1_train"
+te_dataset_name = "paco_lvis_v1_val"
+val_dataset_name = "paco_lvis_v1_test"
 
 # Derived parameters.
-dataset_file_name, image_root_dir = _PREDEFINED_PACO[dataset_name]
-print("Dataset file name: {}".format(dataset_file_name))
-print("Image root dir: {}".format(image_root_dir))
+tr_dataset_file_name, tr_image_root_dir = _PREDEFINED_PACO[tr_dataset_name]
+print("[Train] Dataset file name: {}".format(tr_dataset_file_name))
+print("[Train] Image root dir: {}".format(tr_image_root_dir))
 
-dset_coco, lvis_api = load_json(dataset_file_name, image_root_dir)
+te_dataset_file_name, te_image_root_dir = _PREDEFINED_PACO[te_dataset_name]
+print("[Test] Dataset file name: {}".format(te_dataset_file_name))
+print("[Test] Image root dir: {}".format(te_image_root_dir))
 
-cat_id_ctr = Counter()
-for img_anno in dset_coco:
-    annos = img_anno['annotations']
-    for anno in annos:
-        cat_id = anno['category_id']
-        cat_id_ctr[cat_id] += 1
+val_dataset_file_name, val_image_root_dir = _PREDEFINED_PACO[val_dataset_name]
+print("[Val] Dataset file name: {}".format(val_dataset_file_name))
+print("[Val] Image root dir: {}".format(val_image_root_dir))
 
-category_meta = lvis_api.dataset["categories"]
-cat_id_to_name = defaultdict(str)
-old_id_to_new = dict()
-for idx, cat_id in enumerate(cat_id_ctr.keys()):
-    for cat in category_meta:
-        if cat['id'] == cat_id:
-            cat_name = cat['name']
-    cat_id_to_name[cat_id] = cat_name
-    old_id_to_new[cat_id] = idx
+# Use PACO API to prepare dataset JSON
+tr_dset_coco, _ = load_json(tr_dataset_file_name, tr_image_root_dir)
+te_dset_coco, _ = load_json(te_dataset_file_name, te_image_root_dir)
+val_dset_coco, _ = load_json(val_dataset_file_name, val_image_root_dir)
 
-print("")
+print("[Training Dataset]:")
+verify_stats(tr_dset_coco)
 
-# # Load dataset.
-# with open(dataset_file_name) as f:
-#     dataset = json.load(f)
-#
-# # Extract maps from dataset (for filtering and display).
-# cat_id_to_name = {d["id"]: d["name"] for d in dataset["categories"]}
-# attr_id_to_name = {d["id"]: d["name"] for d in dataset["attributes"]}
-# image_id_to_image_file_name = {d["id"]: os.path.join(image_root_dir, d["file_name"]) for d in dataset["images"]}
-# obj_ann_id_to_anns = get_obj_and_part_anns(dataset["annotations"])
-#
-# im_id_to_anns = defaultdict(list)
-# im_id_to_cats = defaultdict(set)
-# for ann, _ in obj_ann_id_to_anns.values():
-#     im_id_to_anns[ann["image_id"]].append(ann)
-#     im_id_to_cats[ann["image_id"]].add(ann["category_id"])
-#
-# im_id_to_im_area = {d["id"]: d["height"] * d["width"] for d in dataset["images"]}
-# im_id_to_mean_box_area = {}
-# for im_id, anns in im_id_to_anns.items():
-#     im_area = im_id_to_im_area[im_id]
-#     box_areas = {ann["area"] for ann in anns}
-#     im_id_to_mean_box_area[im_id] = sum(box_areas) / len(box_areas) / im_area
-#
-# im_ids = list(im_id_to_anns.keys())
-#
-# for im_id in im_ids[500:505]:
-#     im_fn = image_id_to_image_file_name[im_id]
-#     anns = im_id_to_anns[im_id]
-#     im1 = get_image_with_cat_boxes(im_fn, anns, cat_id_to_name)
-#     print("Image ID:", im_id)
-#     im = Image.fromarray(im1)
-#     im.show()
-#
-# print("")
+print("[Test Dataset]:")
+verify_stats(te_dset_coco)
+
+print("[Val Dataset]:")
+verify_stats(val_dset_coco)
+
+new_test_data = te_dset_coco + val_dset_coco
+
+write_json(tr_dset_coco, 'paco_cat_v1_train.json', 4)
+write_json(new_test_data, 'paco_cat_v1_test.json', 4)
