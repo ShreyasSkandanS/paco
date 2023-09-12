@@ -207,7 +207,7 @@ def load_json(json_file, image_root, dataset_name=None, extra_annotation_keys=No
         record["annotations"] = objs
         dataset_dicts.append(record)
 
-    return dataset_dicts, lvis_api
+    return dataset_dicts, new_id_to_name
 
 
 def get_instances_meta(dataset_name):

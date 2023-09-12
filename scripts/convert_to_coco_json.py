@@ -44,9 +44,9 @@ print("[Val] Dataset file name: {}".format(val_dataset_file_name))
 print("[Val] Image root dir: {}".format(val_image_root_dir))
 
 # Use PACO API to prepare dataset JSON
-tr_dset_coco, _ = load_json(tr_dataset_file_name, tr_image_root_dir)
-te_dset_coco, _ = load_json(te_dataset_file_name, te_image_root_dir)
-val_dset_coco, _ = load_json(val_dataset_file_name, val_image_root_dir)
+tr_dset_coco, name2id_1 = load_json(tr_dataset_file_name, tr_image_root_dir)
+te_dset_coco, name2id_2 = load_json(te_dataset_file_name, te_image_root_dir)
+val_dset_coco, name2id_3 = load_json(val_dataset_file_name, val_image_root_dir)
 
 print("[Training Dataset]:")
 verify_stats(tr_dset_coco)
@@ -61,3 +61,4 @@ new_test_data = te_dset_coco + val_dset_coco
 
 write_json(tr_dset_coco, 'paco_cat_v1_train.json', 4)
 write_json(new_test_data, 'paco_cat_v1_test.json', 4)
+write_json(name2id_1, 'paco_cat_v1_name2id.json', 4)
