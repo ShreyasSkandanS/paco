@@ -5,6 +5,7 @@ outputs
 tools/multirun/*
 tools/outputs/*
 local-runs/
+data/*
 
 # images
 *.png
